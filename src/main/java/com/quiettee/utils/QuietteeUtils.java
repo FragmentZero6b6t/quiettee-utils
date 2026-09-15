@@ -1,13 +1,16 @@
 package com.quiettee.utils;
 
 import com.mojang.logging.LogUtils;
-import com.quiettee.utils.modules.combat.Fusillade;
 import com.quiettee.utils.modules.combat.BoatShot;
+import com.quiettee.utils.modules.combat.Fusillade;
 import com.quiettee.utils.modules.combat.Lance;
 import com.quiettee.utils.modules.combat.MaceSmash;
-import com.quiettee.utils.modules.movement.FloatModule;
 import com.quiettee.utils.modules.movement.BoatPhase;
+import com.quiettee.utils.modules.movement.FloatModule;
 import com.quiettee.utils.modules.movement.GliderWalk;
+import com.quiettee.utils.modules.movement.elytramotion.ElytraDive;
+import com.quiettee.utils.modules.movement.elytramotion.ElytraFollow;
+import com.quiettee.utils.modules.movement.elytramotion.ElytraOrbit;
 import com.quiettee.utils.modules.player.AirMiner;
 import com.quiettee.utils.modules.render.Flicker;
 import com.quiettee.utils.modules.render.HighContrast;
@@ -39,6 +42,9 @@ public class QuietteeUtils extends MeteorAddon {
         modules.add(new AirMiner());
         modules.add(new FloatModule());
         modules.add(new GliderWalk());
+        modules.add(new ElytraFollow());
+        modules.add(new ElytraOrbit());
+        modules.add(new ElytraDive());
         modules.add(new BoatPhase());
         modules.add(new Flicker());
         modules.add(new HighContrast());

@@ -3,7 +3,7 @@
   "id": "quiettee-utils",
   "version": "${version}",
   "name": "Quiettee Utils",
-  "description": "MaceSmash, Lance, Fusillade, BoatShot, AirMiner, Float, GliderWalk, BoatPhase, Flicker and High Contrast as a Meteor Client addon.",
+  "description": "MaceSmash, Lance, Fusillade, BoatShot, AirMiner, Float, GliderWalk, ElytraFollow, ElytraOrbit, ElytraDive, BoatPhase, Flicker and High Contrast as a Meteor Client addon.",
   "authors": [
     "Quiettee"
   ],

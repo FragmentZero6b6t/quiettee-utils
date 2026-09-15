@@ -2,6 +2,9 @@ package com.quiettee.utils.modules.movement;
 
 import com.quiettee.utils.QuietteeUtils;
 import com.quiettee.utils.mixin.PlayerMoveC2SPacketAccessor;
+import com.quiettee.utils.modules.movement.elytramotion.ElytraDive;
+import com.quiettee.utils.modules.movement.elytramotion.ElytraFollow;
+import com.quiettee.utils.modules.movement.elytramotion.ElytraOrbit;
 import meteordevelopment.meteorclient.events.entity.player.PlayerMoveEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -707,7 +710,7 @@ public class FloatModule extends Module {
     }
 
     private void standDownOthers() {
-        Class<?>[] rivals = { ElytraFly.class, Flight.class };
+        Class<?>[] rivals = { ElytraFly.class, Flight.class, ElytraFollow.class, ElytraOrbit.class, ElytraDive.class };
 
         for (Class<?> klass : rivals) {
             @SuppressWarnings("unchecked")

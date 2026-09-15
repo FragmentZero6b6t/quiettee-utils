@@ -12,6 +12,9 @@ Good evening, reader. Quiettee here. You may know me from 6b6t, the books and pu
 | **AirMiner** | Mines at full ground speed while airborne and makes the server agree, by claiming the ground flag around each block action. Built for cutting out of cobwebs if one is caught within the use of MaceSmash or Lance. |
 | **Float** | Pins you mid-air with the elytra closed by holding the ground flag on outgoing move packets. |
 | **GliderWalk** | Walk around on the ground in the full elytra flight pose. Ground skating at elytra speed, hidden nametag, spin and bob show-off options. Yet again another flare module. |
+| **ElytraFollow** | Follows a player on the elytra in formation: behind, beside, or shadowing their exact position. |
+| **ElytraOrbit** | Circles a player on the elytra, flat or as a loop, with an optional helix and obstacle avoidance. |
+| **ElytraDive** | Perches above a player and dives on them, pulling up before the ground, repeating for as long as you like. |
 | **BoatPhase** | Boat flight with block phasing, passenger carrying, and a 30-block quick dive. WASD steers, jump rises, sprint descends, and sneak dismounts. Server corrections are accepted and recorded. Quite the peculiar module I will admit. |
 | **BoatShot** | Camera-independent target locking, vertical bow bursts, server hit feedback and optional return to height. Prefers players; larger bursts are experimental. Also repairs duplicate-event horizontal slowdown in BoatPhase. |
 | **Flicker** | Animates your own skin on everyone else's screen by cycling skin layers, main arm and held item. Strobe, Peel, Chase, Static and Bare modes. This can be seen within tab as your head is animated to all to see. |
