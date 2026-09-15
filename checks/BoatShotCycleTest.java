@@ -1,0 +1,105 @@
+package com.quiettee.utils.modules.combat;
+
+public final class BoatShotCycleTest {
+    private static int checks;
+    private static void check(boolean value, String message) {
+        checks++;
+        if (!value) throw new AssertionError(message);
+    }
+    private static void near(double actual, double expected, String message) {
+        check(Math.abs(actual - expected) < 1e-7, message + ": " + actual);
+    }
+    public static void main(String[] args) {
+        BoatShotCycle shot = new BoatShotCycle();
+        check(!shot.sent(1, 100, 97, 0), "Unrequested vehicle packets cannot release a bow");
+        check(shot.queue(1, 100, -3), "Queue the user's shot");
+        check(!shot.queue(1, 100, -3), "A second release cannot replace the first");
+        check(!shot.sent(1, 100, 97, 0), "Sending a matching packet before the movement hook is insufficient");
+        near(shot.plan(2, 100, 3), -3, "Dive once");
+        near(shot.plan(2, 97, 3), 0, "Repeated movement hooks cannot duplicate the burst");
+        check(!shot.sent(2, 100, 97.01, 0), "Clipped vertical motion must not claim the planned boost");
+        check(!shot.sent(2, 100, 97, 0.01), "Unexpected horizontal movement invalidates the shot");
+        check(!shot.sent(3, 100, 97, 0), "A delayed packet from another tick cannot release it");
+        check(shot.sent(2, 100, 97, 0), "Exact sent movement unlocks release");
+        check(!shot.sent(2, 100, 97, 0), "Duplicate sent events cannot release twice");
+        shot.released(true);
+        near(shot.plan(2, 97, 3), 0, "No return in the release tick");
+        near(shot.plan(3, 97, 3), 0, "No return before the server arrow clears");
+        check(shot.stage() == BoatShotCycle.Stage.WAIT_CLEAR, "Release waits for an observed arrow");
+        shot.arrowClear();
+        near(shot.plan(4, 97, 1), 1, "Return obeys a newly lowered movement limit");
+        near(shot.plan(5, 98, 3), 2, "Return cannot overshoot home");
+        near(shot.plan(6, 100, 3), 0, "Return terminates at home");
+        check(shot.stage() == BoatShotCycle.Stage.IDLE, "Ready for the next independent shot");
+        check(shot.queue(10, 100, 3), "Upward shots supported");
+        near(shot.plan(11, 100, 3), 3, "Upward burst");
+        shot.reset();
+        check(!shot.sent(11, 100, 103, 0), "Correction/seat/session reset makes late packets inert");
+        check(shot.queue(20, 100, -3), "Queue after reset");
+        check(shot.expired(25), "A missing vehicle send has a finite release wait");
+        near(shot.plan(25, 100, 3), 0, "Expired shot cannot move");
+        shot.reset();
+        shot.queue(30, 100, -3);
+        near(shot.plan(31, 99, 3), 0, "Changed origin blocks a stale burst");
+        near(shot.plan(31, 100, 2), -3, "Travel speed does not silently cap shot speed");
+        shot.released(true);
+        check(shot.stage() == BoatShotCycle.Stage.IDLE, "Aborted release does not schedule a return");
+        check(!shot.queue(1, Double.NaN, 3), "NaN origin rejected");
+        check(!shot.queue(1, 100, 30), "Oversized burst rejected");
+        check(!shot.queue(1, 100, Double.POSITIVE_INFINITY), "Infinite movement rejected");
+        near(BoatShotCycle.burst(90, 9, 60), -9, "Configured burst speed applies independently");
+        near(BoatShotCycle.burst(-90, 3, 60), 3, "Upward aim selects upward movement");
+        near(BoatShotCycle.burst(30, 3, 60), 0, "Shallow aim cannot boost");
+        near(BoatShotCycle.burst(Double.NaN, 3, 60), 0, "Invalid pitch cannot move");
+        shot.reset();
+        check(shot.queue(40, 100, -9), "Queue configured nine-block burst");
+        near(shot.plan(41, 100, 3), -9, "Nine-block burst with three-block travel setting");
+        check(shot.sent(41, 100, 91, 0), "Nine-block sent burst unlocks release");
+        shot.released(false);
+        near(shot.plan(45, 91, 3), 0, "Disabling return still waits for arrow clearance");
+        shot.arrowClear();
+        check(shot.stage() == BoatShotCycle.Stage.IDLE, "No return when disabled");
+        check(shot.queue(50, 200, -20), "Larger experimental burst supported");
+        near(shot.plan(51, 200, 3), -20, "Burst limit is separate from normal travel limit");
+        check(shot.sent(51, 200, 180, 0), "Twenty-block burst must match the sent packet");
+        shot.released(true);
+        shot.arrowClear();
+        near(shot.plan(52, 180, 3), 3, "Larger burst returns at ordinary travel speed");
+        shot.reset();
+        BoatShotMount mount = new BoatShotMount();
+        mount.begin(123, 1);
+        mount.sentGround(false, 1);
+        mount.seat(123, 2);
+        check(mount.ready(), "Boarding teleport must not erase pre-boarding airborne flag");
+        mount.sentGround(true, 3);
+        check(mount.ready(), "Mounted ground-only packets cannot change the server flag");
+        check(mount.ready(), "A correction during the ride leaves the rider's server ground flag untouched");
+        mount.seat(-1, 4);
+        mount.begin(124, 5);
+        mount.sentGround(false, 5);
+        mount.sentGround(true, 6);
+        mount.seat(124, 7);
+        check(!mount.ready(), "Actual on-foot grounded packet invalidates claim");
+        mount.reset();
+        mount.begin(125, 10);
+        mount.sentGround(false, 10);
+        mount.seat(126, 11);
+        check(!mount.ready(), "Cannot transfer claim to another boat");
+        mount.reset();
+        mount.begin(125, 10);
+        mount.sentGround(false, 10);
+        mount.seat(125, 31);
+        check(!mount.ready(), "Expired boarding attempt cannot arm a later ride");
+        mount.reset();
+        mount.begin(125, 10);
+        mount.seat(125, 11);
+        check(!mount.ready(), "Canceled priming packet cannot arm a boat");
+        near(BoatShotCycle.launchSpeed(90, -3, 20, false), 6, "Airborne downward shot doubles nominal launch speed");
+        near(BoatShotCycle.launchSpeed(-90, 3, 20, false), 6, "Airborne upward shot doubles nominal launch speed");
+        near(BoatShotCycle.launchSpeed(90, -3, 20, true), 3, "Grounded rider loses vertical inheritance");
+        near(BoatShotCycle.launchSpeed(0, -3, 20, false), Math.sqrt(18), "Perpendicular movement adds as a vector");
+        near(BoatShotCycle.launchSpeed(90, 3, 20, false), 0, "Opposing movement cancels the arrow's initial velocity");
+        near(BoatShotCycle.launchSpeed(90, -3, 10, false), 4.25, "Partial draw is not treated as fully charged");
+        System.out.println("BoatShotCycleTest: " + checks + " checks passed");
+    }
+}

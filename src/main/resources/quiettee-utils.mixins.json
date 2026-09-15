@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "package": "com.quiettee.utils.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BoatPhaseMixin",
+    "BoatPhaseNetworkMixin",
+    "BoatShotInputMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "LivingEntityAccessor",
+    "PlayerEntityMixin",
+    "PlayerInfoConcurrencyMixin",
+    "PlayerMoveC2SPacketAccessor",
+    "ShaderLoaderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "quiettee-utils",
+  "version": "${version}",
+  "name": "Quiettee Utils",
+  "description": "MaceSmash, Lance, Fusillade, BoatShot, AirMiner, Float, GliderWalk, BoatPhase, Flicker and High Contrast as a Meteor Client addon.",
+  "authors": [
+    "Quiettee"
+  ],
+  "contact": {
+    "sources": "https://github.com/FragmentZero6b6t/quiettee-utils"
+  },
+  "icon": "assets/quiettee-utils/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "meteor": [
+      "com.quiettee.utils.QuietteeUtils"
+    ]
+  },
+  "mixins": [
+    "quiettee-utils.mixins.json"
+  ],
+  "custom": {
+    "meteor-client:color": "150,110,255",
+    "modmenu": {
+      "parent": {
+        "id": "meteor-client"
+      }
+    }
+  },
+  "depends": {
+    "java": ">=21",
+    "minecraft": ["${mc_version}"],
+    "meteor-client": "*"
+  }
+}
