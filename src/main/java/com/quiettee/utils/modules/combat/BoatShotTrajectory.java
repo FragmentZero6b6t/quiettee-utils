@@ -2,6 +2,7 @@ package com.quiettee.utils.modules.combat;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+
 import java.util.Optional;
 import java.util.function.BiPredicate;
 

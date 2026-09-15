@@ -1,5 +1,6 @@
 package com.quiettee.utils.modules.combat;
 
+import meteordevelopment.meteorclient.systems.friends.Friends;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -9,7 +10,7 @@ import net.minecraft.entity.vehicle.AbstractBoatEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import meteordevelopment.meteorclient.systems.friends.Friends;
+
 import java.util.*;
 
 public final class BoatShotGuard {

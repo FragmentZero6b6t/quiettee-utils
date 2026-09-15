@@ -13,11 +13,13 @@ import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEv
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.mixin.ClientPlayerEntityAccessor;
 import meteordevelopment.meteorclient.mixininterface.IPlayerMoveC2SPacket;
 import meteordevelopment.meteorclient.mixininterface.IVec3d;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.systems.modules.movement.elytrafly.ElytraFly;
 import meteordevelopment.meteorclient.utils.entity.DamageUtils;
 import meteordevelopment.meteorclient.utils.entity.EntityUtils;
 import meteordevelopment.meteorclient.utils.entity.SortPriority;
@@ -51,6 +53,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.ClientConnection;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
@@ -391,6 +394,9 @@ public class Lance extends Module {
     private boolean glideRecovery, recoveryJumped;
     private double recoveryVy;
     private int recoveryJumpTick = -1000;
+    private static final boolean FORK_SYNC = detectForkSync();
+    private int relightPending, relights;
+    private boolean relightArmed, relightAirborneMove;
     private int srvCouch = -1;
     private boolean srvUse;
     private int srvUseOffTick = -1000;
@@ -516,6 +522,8 @@ public class Lance extends Module {
         glideRecovery = recoveryJumped = false;
         recoveryVy = 0;
         recoveryJumpTick = -1000;
+        relightPending = relights = 0;
+        relightArmed = relightAirborneMove = false;
         srvCouch = -1;
         srvUse = false;
         srvUseOffTick = couchPressTick = -1000;
@@ -625,6 +633,7 @@ public class Lance extends Module {
         selfWebHold = selfWebTick();
         if (selfWebHold || manualWebControl) { finishWeave(true); clearPostWebRetry(); }
         prepareGlideRecovery();
+        relightTick();
 
         if (!selfWebHold && !manualWebControl && follow.get() && target != null && usableElytra() && !mc.player.isOnGround() && !mc.player.isTouchingWater() && !mc.player.isGliding()) {
             mc.player.startGliding();
@@ -900,6 +909,42 @@ public class Lance extends Module {
         dbg("recovery ground jump vy=%.3f; waiting for ElytraFly glide echo", recoveryVy);
     }
 
+    private static boolean detectForkSync() {
+        try {
+            ElytraFly.class.getDeclaredField("serverSync");
+            return true;
+        } catch (NoSuchFieldException e) {
+            return false;
+        }
+    }
+
+    private int relightWait() {
+        return Math.min(60, Math.max(4, (int) Math.ceil(PlayerUtils.getPing() / 50.0) + 3));
+    }
+
+    private void relightTick() {
+        relightArmed = false;
+        relightAirborneMove = false;
+        if (relightPending > 0) {
+            relightPending--;
+            return;
+        }
+        if (FORK_SYNC || !ownsCurrentBody() || correcting || srvGliding != Boolean.FALSE || !mc.player.isGliding()) return;
+        if (mc.player.isOnGround() || mc.player.isTouchingWater() || !usableElytra()) return;
+        relightArmed = true;
+        ((ClientPlayerEntityAccessor) mc.player).meteor$setTicksSinceLastPositionPacketSent(20);
+    }
+
+    private void relightPost() {
+        if (!relightArmed) return;
+        relightArmed = false;
+        if (!relightAirborneMove || mc.getNetworkHandler() == null) return;
+        mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+        relightPending = relightWait();
+        relights++;
+        dbg("RELIGHT #%d glide command sent behind the airborne packet", relights);
+    }
+
     private void adoptGhost(String reason) {
         if (!ownsCurrentBody() || lastClaim == null || correcting) return;
         Vec3d adopted = lastWire != null ? lastWire : lastClaim;
@@ -940,7 +985,7 @@ public class Lance extends Module {
             finishWeave(true);
             prepareGlideRecovery();
             status = !glideRecovery && !mc.player.isGliding() ? "not gliding - hover on the elytra"
-                : "server dropped the wings - waiting for ElytraFly to re-open them";
+                : FORK_SYNC ? "server dropped the wings - waiting for ElytraFly to re-open them" : "server dropped the wings - re-opening them";
             return;
         }
 
@@ -1403,6 +1448,7 @@ public class Lance extends Module {
     @EventHandler(priority = EventPriority.LOWEST)
     private void onSend(PacketEvent.Send event) {
         if (!ownsCurrentBody() || correcting || event.connection != ownerNetwork.getConnection()) return;
+        if (event.packet instanceof ClientCommandC2SPacket c && c.getMode() == ClientCommandC2SPacket.Mode.START_FALL_FLYING) relightPending = relightWait();
         if (!(event.packet instanceof PlayerMoveC2SPacket p)) return;
 
         if (protectedWireTick == tickCounter) { event.cancel(); return; }
@@ -1428,6 +1474,7 @@ public class Lance extends Module {
     @EventHandler
     private void onSent(PacketEvent.Sent event) {
         if (!ownsCurrentBody() || correcting || event.connection != ownerNetwork.getConnection()) return;
+        if (relightArmed && event.packet instanceof PlayerMoveC2SPacket rp && rp.changesPosition() && !rp.isOnGround()) relightAirborneMove = true;
         if (event.packet instanceof PlayerInteractBlockC2SPacket block && sendingWeb != null) {
             webSentSequence = block.getSequence();
             BlockHitResult hit = block.getBlockHitResult();
@@ -1489,6 +1536,7 @@ public class Lance extends Module {
     @EventHandler
     private void onSendPost(SendMovementPacketsEvent.Post event) {
         if (!ownsCurrentBody() || correcting) return;
+        relightPost();
         boolean claimSent = posSentThisTick && (lastClaim == null
             || lastWire != null && lastWire.squaredDistanceTo(lastClaim) < 1e-6);
         if (!claimSent && (lastClaim != null || wireSyncWanted || volleyWanted || weavingTier != null)) sendPos();
@@ -1537,6 +1585,7 @@ public class Lance extends Module {
             if (!ownsCurrentBody() || echo.owner != echoOwner) continue;
             if (srvGliding == null || echo.gliding != srvGliding) dbg("GLIDE echo %s", echo.gliding ? "ON" : "OFF");
             if (!echo.gliding && (srvGliding == Boolean.TRUE || lastClaim != null)) beginGlideRecovery();
+            if (echo.gliding || srvGliding == null || echo.gliding != srvGliding) relightPending = 0;
             srvGliding = echo.gliding;
             if (echo.gliding) {
                 glideRecovery = recoveryJumped = false;

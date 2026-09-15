@@ -7,6 +7,7 @@ import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
